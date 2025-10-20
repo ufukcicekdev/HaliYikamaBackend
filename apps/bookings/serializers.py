@@ -54,6 +54,8 @@ class BookingDetailSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True
     )
+    # Add user details
+    user_details = serializers.SerializerMethodField()
     can_cancel = serializers.SerializerMethodField()
     can_reschedule = serializers.SerializerMethodField()
     cancellation_info = serializers.SerializerMethodField()
@@ -61,7 +63,7 @@ class BookingDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = (
-            'id', 'booking_number', 'user', 'status', 'status_display',
+            'id', 'booking_number', 'user', 'user_details', 'status', 'status_display',
             'pickup_address', 'pickup_address_details',
             'delivery_address', 'delivery_address_details',
             'pickup_date', 'pickup_time_slot', 'delivery_date', 'delivery_time_slot',
@@ -76,6 +78,33 @@ class BookingDetailSerializer(serializers.ModelSerializer):
             'id', 'booking_number', 'user', 'total',
             'created_at', 'updated_at', 'confirmed_at', 'completed_at', 'cancelled_at'
         )
+    
+    def get_user_details(self, obj):
+        """Return user details."""
+        try:
+            if not obj.user:
+                return None
+            
+            user = obj.user
+            # Get phone and convert to string if it's a PhoneNumber object
+            phone = ''
+            if hasattr(user, 'phone') and user.phone:
+                phone = str(user.phone)  # Convert PhoneNumber to string
+            
+            result = {
+                'id': user.id,
+                'first_name': user.first_name or '',
+                'last_name': user.last_name or '',
+                'email': user.email or '',
+                'phone': phone,
+            }
+            print(f"✅ User details for booking {obj.id}: {result}")
+            return result
+        except Exception as e:
+            print(f"❌ Error in get_user_details for booking {obj.id}: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def get_can_cancel(self, obj):
         can_cancel, _ = obj.can_cancel()
