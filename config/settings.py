@@ -206,6 +206,28 @@ SIMPLE_JWT = {
 # CORS
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS')
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# Trailing slash settings
+APPEND_SLASH = True
 
 # Email
 EMAIL_BACKEND = env('EMAIL_BACKEND')
@@ -244,6 +266,12 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = [
+    'https://web-production-af10.up.railway.app',
+    'https://haliyikamafrontend-production.up.railway.app',
+]
 
 # Jazzmin Settings
 JAZZMIN_SETTINGS = {
