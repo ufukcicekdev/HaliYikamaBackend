@@ -2,8 +2,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from .models import AdminNotification, FCMDevice
-from .serializers import AdminNotificationSerializer, FCMDeviceSerializer
+from .models import AdminNotification, FCMDevice, UserNotification
+from .serializers import AdminNotificationSerializer, FCMDeviceSerializer, UserNotificationSerializer
 
 
 class IsAdminOrStaff(IsAuthenticated):
@@ -39,6 +39,46 @@ class AdminNotificationViewSet(viewsets.ModelViewSet):
         """Mark all notifications as read."""
         AdminNotification.objects.filter(is_read=False).update(is_read=True)
         return Response({'message': 'All notifications marked as read'})
+    
+    @action(detail=True, methods=['patch'])
+    def mark_read(self, request, pk=None):
+        """Mark a single notification as read."""
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response(self.serializer_class(notification).data)
+
+
+class UserNotificationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for customer/user notifications.
+    """
+    queryset = UserNotification.objects.all()
+    serializer_class = UserNotificationSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        # Only return notifications for the current user
+        queryset = UserNotification.objects.filter(user=self.request.user)
+        
+        # Filter by read status
+        is_read = self.request.query_params.get('is_read', None)
+        if is_read is not None:
+            queryset = queryset.filter(is_read=is_read.lower() == 'true')
+        
+        return queryset
+    
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        """Mark all notifications as read for current user."""
+        UserNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({'message': 'All notifications marked as read'})
+    
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        """Get count of unread notifications for current user."""
+        count = UserNotification.objects.filter(user=request.user, is_read=False).count()
+        return Response({'count': count})
     
     @action(detail=True, methods=['patch'])
     def mark_read(self, request, pk=None):

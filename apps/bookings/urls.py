@@ -6,7 +6,7 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'bookings', BookingViewSet, basename='booking')
+router.register(r'', BookingViewSet, basename='booking')  # Changed from 'bookings' to ''
 router.register(r'timeslots', TimeSlotViewSet, basename='timeslot')
 
 urlpatterns = [

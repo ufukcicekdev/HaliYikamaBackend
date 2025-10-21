@@ -233,3 +233,34 @@ class FCMService:
         
         logger.info(f'Sending notification to {len(tokens)} admin devices')
         return cls.send_multicast(tokens, title, body, data)
+    
+    @classmethod
+    def send_to_user(cls, user, title, body, data=None):
+        """
+        Send push notification to a specific user.
+        
+        Args:
+            user: User instance
+            title (str): Notification title
+            body (str): Notification body
+            data (dict): Optional data payload
+        
+        Returns:
+            dict: Results with success and failure counts
+        """
+        from apps.notifications.models import FCMDevice
+        
+        # Get active FCM tokens for this user
+        tokens = list(
+            FCMDevice.objects.filter(
+                user=user,
+                is_active=True
+            ).values_list('token', flat=True)
+        )
+        
+        if not tokens:
+            logger.warning(f'No active FCM tokens found for user {user.email}.')
+            return None
+        
+        logger.info(f'Sending notification to {len(tokens)} devices for user {user.email}')
+        return cls.send_multicast(tokens, title, body, data)

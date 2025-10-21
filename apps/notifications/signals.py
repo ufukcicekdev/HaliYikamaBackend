@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from apps.bookings.models import Booking
-from .models import AdminNotification
+from .models import AdminNotification, UserNotification
 from .fcm_service import FCMService
 import logging
 
@@ -68,7 +68,7 @@ def create_cancellation_notification(sender, instance, **kwargs):
                 except Exception as e:
                     logger.error(f'Error sending FCM notification for cancelled booking #{instance.id}: {e}')
                     
-            # Check for other status changes
+            # Check for other status changes (send to CUSTOMER, not admin)
             elif old_instance.status != instance.status and instance.status != 'cancelled':
                 status_names = {
                     'pending': 'Bekliyor',
@@ -78,27 +78,45 @@ def create_cancellation_notification(sender, instance, **kwargs):
                 }
                 new_status = status_names.get(instance.status, instance.status)
                 
-                # Create in-app notification
-                AdminNotification.objects.create(
-                    title='Sipariş Durumu Değişti',
-                    message=f'#{instance.id} numaralı siparişin durumu "{new_status}" olarak güncellendi.',
-                    notification_type='status_change',
+                # Create notification for CUSTOMER
+                notification_messages = {
+                    'confirmed': '✅ Siparişiniz Onaylandı!',
+                    'in_progress': '🔄 Siparişiniz İşlemde!',
+                    'completed': '✨ Siparişiniz Tamamlandı!',
+                }
+                
+                notification_types = {
+                    'confirmed': 'order_confirmed',
+                    'in_progress': 'order_in_progress',
+                    'completed': 'order_completed',
+                }
+                
+                title = notification_messages.get(instance.status, 'Sipariş Durumu Değişti')
+                notification_type = notification_types.get(instance.status, 'info')
+                
+                # Create in-app notification for CUSTOMER
+                UserNotification.objects.create(
+                    user=instance.user,  # Send to customer, not admin
+                    title=title,
+                    message=f'#{instance.id} numaralı siparişinizin durumu "{new_status}" olarak güncellendi.',
+                    notification_type=notification_type,
                     booking=instance,
                     is_read=False
                 )
                 
-                # Send FCM push notification
+                # Send FCM push notification to CUSTOMER
                 try:
-                    FCMService.send_to_admin_users(
-                        title='🔄 Sipariş Durumu Değişti',
-                        body=f'#{instance.id} numaralı siparişin durumu "{new_status}" olarak güncellendi.',
+                    FCMService.send_to_user(
+                        user=instance.user,
+                        title=title,
+                        body=f'#{instance.id} numaralı siparişinizin durumu "{new_status}" olarak güncellendi.',
                         data={
                             'type': 'status_change',
                             'bookingId': str(instance.id),
-                            'url': f'/admin/orders/{instance.id}'
+                            'url': f'/dashboard/siparisler/{instance.id}'
                         }
                     )
                 except Exception as e:
-                    logger.error(f'Error sending FCM notification for status change #{instance.id}: {e}')
+                    logger.error(f'Error sending FCM notification to customer for status change #{instance.id}: {e}')
         except Booking.DoesNotExist:
             pass

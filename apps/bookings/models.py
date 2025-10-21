@@ -39,7 +39,14 @@ class Booking(models.Model):
     
     # Scheduling
     pickup_date = models.DateField(verbose_name="Alım Tarihi")
-    pickup_time_slot = models.ForeignKey('TimeSlot', on_delete=models.PROTECT, related_name='pickup_bookings', verbose_name="Alım Saat Aralığı")
+    pickup_time_slot = models.ForeignKey(
+        'TimeSlot', 
+        on_delete=models.PROTECT, 
+        related_name='pickup_bookings',
+        null=True,
+        blank=True,
+        verbose_name="Alım Saat Aralığı"
+    )
     delivery_date = models.DateField(null=True, blank=True, verbose_name="Teslim Tarihi")
     delivery_time_slot = models.ForeignKey(
         'TimeSlot', 
@@ -118,9 +125,12 @@ class Booking(models.Model):
         settings = BookingSettings.get_settings()
         now = timezone.now()
         
-        # Combine pickup date and time slot start time
+        # If no time slot (e.g., carpet cleaning), use pickup date at midnight
         from datetime import datetime, time
-        pickup_datetime = datetime.combine(self.pickup_date, self.pickup_time_slot.start_time)
+        if self.pickup_time_slot:
+            pickup_datetime = datetime.combine(self.pickup_date, self.pickup_time_slot.start_time)
+        else:
+            pickup_datetime = datetime.combine(self.pickup_date, time(0, 0))
         pickup_datetime = timezone.make_aware(pickup_datetime)
         
         time_until_pickup = pickup_datetime - now
@@ -142,8 +152,12 @@ class Booking(models.Model):
         settings = BookingSettings.get_settings()
         now = timezone.now()
         
-        from datetime import datetime
-        pickup_datetime = datetime.combine(self.pickup_date, self.pickup_time_slot.start_time)
+        # If no time slot (e.g., carpet cleaning), use pickup date at midnight
+        from datetime import datetime, time
+        if self.pickup_time_slot:
+            pickup_datetime = datetime.combine(self.pickup_date, self.pickup_time_slot.start_time)
+        else:
+            pickup_datetime = datetime.combine(self.pickup_date, time(0, 0))
         pickup_datetime = timezone.make_aware(pickup_datetime)
         
         time_until_pickup = pickup_datetime - now

@@ -139,6 +139,47 @@ class Notification(models.Model):
         return f"{self.get_notification_type_display()} - {self.user.email}"
 
 
+class UserNotification(models.Model):
+    """In-app notifications for customers."""
+    
+    TYPE_CHOICES = [
+        ('order_confirmed', _('Order Confirmed')),
+        ('order_in_progress', _('Order In Progress')),
+        ('order_completed', _('Order Completed')),
+        ('order_cancelled', _('Order Cancelled')),
+        ('info', _('Information')),
+    ]
+    
+    user = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.CASCADE,
+        related_name='user_notifications'
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='info')
+    booking = models.ForeignKey(
+        'bookings.Booking',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='user_notifications'
+    )
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _('user notification')
+        verbose_name_plural = _('user notifications')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_notification_type_display()} - {self.user.email}"
+
+
 class NotificationPreference(models.Model):
     """User notification preferences."""
     

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib import messages
-from .models import Notification, NotificationPreference, AdminNotification, FCMDevice
+from .models import Notification, NotificationPreference, AdminNotification, FCMDevice, UserNotification
 from .fcm_service import FCMService
 
 
@@ -15,6 +15,27 @@ class AdminNotificationAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Temel Bilgiler', {
             'fields': ('title', 'message', 'notification_type')
+        }),
+        ('İlişkili Bilgiler', {
+            'fields': ('booking', 'is_read')
+        }),
+        ('Zaman Bilgileri', {
+            'fields': ('created_at',)
+        }),
+    )
+
+
+@admin.register(UserNotification)
+class UserNotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'title', 'notification_type', 'booking', 'is_read', 'created_at')
+    list_filter = ('notification_type', 'is_read', 'created_at')
+    search_fields = ('title', 'message', 'user__email')
+    readonly_fields = ('created_at',)
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('Temel Bilgiler', {
+            'fields': ('user', 'title', 'message', 'notification_type')
         }),
         ('İlişkili Bilgiler', {
             'fields': ('booking', 'is_read')

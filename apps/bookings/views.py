@@ -68,6 +68,37 @@ class BookingViewSet(viewsets.ModelViewSet):
             'data': BookingDetailSerializer(booking).data
         }, status=status.HTTP_201_CREATED)
     
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Get booking statistics for current user."""
+        user = request.user
+        
+        # If admin, return error - they should use admin endpoint
+        if user.is_staff or user.user_type == 'admin':
+            return Response({
+                'success': False,
+                'error': 'Please use admin stats endpoint: /api/admin/stats/'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get user's bookings
+        user_bookings = Booking.objects.filter(user=user)
+        
+        # Calculate stats
+        total_bookings = user_bookings.count()
+        pending_bookings = user_bookings.filter(status='pending').count()
+        completed_bookings = user_bookings.filter(status='completed').count()
+        cancelled_bookings = user_bookings.filter(status='cancelled').count()
+        
+        return Response({
+            'success': True,
+            'data': {
+                'total_bookings': total_bookings,
+                'pending_bookings': pending_bookings,
+                'completed_bookings': completed_bookings,
+                'cancelled_bookings': cancelled_bookings,
+            }
+        })
+    
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         """Cancel a booking."""

@@ -140,9 +140,9 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         )
     
     def validate(self, attrs):
-        # Validate time slot availability
+        # Validate time slot availability only if provided
         pickup_slot = attrs.get('pickup_time_slot')
-        if not pickup_slot.is_slot_available():
+        if pickup_slot and not pickup_slot.is_slot_available():
             raise serializers.ValidationError({
                 'pickup_time_slot': 'This time slot is no longer available.'
             })
@@ -200,8 +200,9 @@ class BookingCreateSerializer(serializers.ModelSerializer):
                 notes=item_data.get('notes', '')
             )
         
-        # Increment slot booking count
-        booking.pickup_time_slot.increment_bookings()
+        # Increment slot booking count only if slots were provided
+        if booking.pickup_time_slot:
+            booking.pickup_time_slot.increment_bookings()
         if booking.delivery_time_slot:
             booking.delivery_time_slot.increment_bookings()
         
