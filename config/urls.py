@@ -21,6 +21,9 @@ urlpatterns = [
     # Admin endpoints
     path('api/admin/', include('apps.bookings.admin_urls')),
     path('api/admin/notifications/', include('apps.notifications.urls')),
+    path('api/admin/services/', include('apps.services.admin_urls')),
+    path('api/admin/payments/', include('apps.payments.admin_urls')),
+    path('api/admin/users/', include('apps.accounts.admin_urls')),
     
     # Payments
     path('api/payments/', include('apps.payments.urls')),

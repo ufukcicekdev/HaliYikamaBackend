@@ -21,14 +21,30 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """User registration serializer with password validation."""
-    
+
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True, required=True)
-    
+    # Use CharField so we can normalize before PhoneNumberField model validation
+    phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     class Meta:
         model = User
         fields = ('email', 'password', 'password_confirm', 'first_name', 'last_name', 'phone')
-    
+
+    def validate_phone(self, value):
+        if not value or not value.strip():
+            return None
+        cleaned = value.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        if cleaned.startswith('+90'):
+            pass
+        elif cleaned.startswith('0090'):
+            cleaned = '+90' + cleaned[4:]
+        elif cleaned.startswith('0') and len(cleaned) == 11:
+            cleaned = '+90' + cleaned[1:]
+        elif cleaned.startswith('5') and len(cleaned) == 10:
+            cleaned = '+90' + cleaned
+        return cleaned
+
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError({"password": "Passwords do not match."})
